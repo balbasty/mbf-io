@@ -1,0 +1,1269 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+  * XML Schema for Microbrightfield's Neuromorphological File (NMF) v4
+  * This is a XSD 1.0 schema, therefore some of the NMF specifications
+    cannot be exactly expressed. Instead, some NMF rules are relaxed.
+  * Based on https://neuromorphological-file-specification.readthedocs.io/en/4.0.0/NMF.html
+  * Written by Yael Balbastre on Dec 2nd, 2023
+-->
+<xs:schema
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="qualified"
+  xml:lang="EN"
+  version="1.0"
+>
+
+<!--
+  ======================================================================
+                                MBF TYPES
+  ======================================================================
+-->
+
+<xs:simpleType name="color">
+  <xs:restriction base="xs:token">
+    <xs:pattern value="#[0-9A-Fa-f]{6}"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="hex">
+  <xs:restriction base="xs:token">
+    <xs:pattern value="0x[0-9A-Fa-f]+"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="SpineClass">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="none" />
+    <xs:enumeration value="filopodium" />
+    <xs:enumeration value="mushroom" />
+    <xs:enumeration value="stubby" />
+    <xs:enumeration value="thin" />
+    <xs:enumeration value="branched" />
+    <xs:enumeration value="detached" />
+    <xs:enumeration value="other" />
+  </xs:restriction>
+</xs:simpleType>
+
+<!--
+  ======================================================================
+                            MBF TYPES : PROPERTIES
+  ======================================================================
+-->
+
+<xs:complexType name="property" mixed="true">
+  <xs:choice minOccurs="0" maxOccurs="unbounded">
+    <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax" />
+  </xs:choice>
+  <xs:attribute name="name" type="xs:string" />
+</xs:complexType>
+
+<!--
+  The <property> element named "TimePointManager" will always be present
+  in the neuromorphological data files, however, it is not used at this
+  time.
+  The element can be disregarded.
+-->
+<xs:complexType name="TimePointManagerProperty" mixed="true">
+  <xs:choice minOccurs="0" maxOccurs="unbounded">
+    <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax" />
+  </xs:choice>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="TimePointManager" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  The "Channel" <property> indicates the image color channel used to
+  trace an object.
+  If a detection is performed on only one of the image color channels,
+  then that image channel is reported for the detected data element.
+  If the detection is performed on two or more color channels,
+  the <property name="Channel"> element will not be written for that
+  structure.
+  If the image is monochrome, the <property name="Channel"> element will
+  not be written for any structure. Child elements are expected to be
+  detected in the same color channel as their parent structure.
+  For example, a <branch>, <spine>, or <varicosity> is expected to be
+  detected in the same color channel as the associated <tree>.
+-->
+<xs:complexType name="ChannelProperty">
+  <xs:sequence>
+    <!--
+      [0] The Channel child element’s format version.
+      [1] Indicates the color channel number of the source image a trace
+          element was detected in starting at 0.
+    -->
+    <xs:element name="n" type="xs:integer" minOccurs="2" maxOccurs="2" />
+    <!--
+      The color of this channel is reported as a hex adecimal value.
+    -->
+    <xs:element name="c" type="color" minOccurs="1" maxOccurs="1" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="Channel" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!-- color -->
+<xs:complexType name="ColorProperty">
+  <xs:sequence>
+    <xs:element name="c" type="color" minOccurs="1" maxOccurs="1" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="Color" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  The <property> named "Set" can be found in any trace data element.
+  The <property> is used to name and group one or many trace data elements.
+  These elements can either be the same type (ex. just <tree> elements)
+  or different types (ex. <marker>, <tree>, and <contour> elements).
+  A set has one value that is a text string indicating the name of that set.
+  An element can be associated with multiple "Set" properties.
+-->
+<xs:complexType name="SetProperty">
+  <xs:sequence>
+    <xs:element name="s" type="xs:string" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="Set" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<xs:complexType name="PunctumProperty">
+  <xs:sequence>
+    <!--
+       [0] xs:integer | version
+       [1] xs:decimal | spread
+       [2] xs:decimal | mean luminance
+       [3] xs:decimal | surface area
+       [4] xs:integer | voxel count
+       [5] xs:integer | 2D flag
+           0 = the punctum was detected in 3D
+           1 = the punctum was detected in 2D
+       [6] xs:decimal | volume
+       [7] xs:integer | type
+           0 = colocalized
+           1 = proximal
+           2 = distal
+       [8] xs:integer | location
+       [9] xs:integer | colocalized fraction
+      [10] xs:integer | proximal fraction
+    -->
+    <xs:element name="n" type="xs:decimal" minOccurs="11" maxOccurs="11" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="Punctum" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  The "VolumeRLE" <property> includes a string of numbers that describe
+  the voxels of the punctum’s detection cuboid.
+  The variables in the figure correspond with one number, each defined in Table 9.
+  The first two pairs of background and foreground values (B1, F1, B2, F2) are listed.
+  The remaining background and foreground values are abbreviated in the figure for
+  concision using the ellipsis. The final pair of background and foreground
+  values (Bn, Fn) are the last values in the string.
+-->
+<xs:complexType name="VolumeRLEProperty">
+  <xs:sequence>
+    <xs:element name="s" type="xs:string" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="VolumeRLE" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  A unique contour identification number.
+-->
+<xs:complexType name="GUIDProperty">
+  <xs:sequence>
+    <xs:element name="s" type="xs:string" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="GUID" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  Provides a number relating to the contour’s fill percentage.
+  0 indicates the contour has no fill and the polygon is hollow.
+  The value can equal a number between 0 and 255.
+  100% fill density will report a value of 255.
+-->
+<xs:complexType name="FillDensityProperty">
+  <xs:sequence>
+    <xs:element name="n">
+      <xs:simpleType>
+        <xs:restriction base="xs:nonNegativeInteger">
+          <xs:minInclusive value="0"/>
+          <xs:maxInclusive value="255"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:element>
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="FillDensity" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  Lists a text string URL that is linked to the anatomy term used
+  for a contour and provides a unique identifier for the term.
+-->
+<xs:complexType name="TraceAssociationProperty">
+  <xs:sequence>
+    <xs:element name="s" type="xs:string" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="TraceAssociation" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  Defines the spine classification.
+-->
+<xs:complexType name="SpineClassProperty">
+  <xs:sequence>
+    <!-- Defines the data format version for the spine child element. -->
+    <xs:element name="n" type="xs:integer" />
+    <!-- Records the type of spine -->
+    <xs:element name="s" type="SpineClass" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="Class" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  Defines the spine volume.
+-->
+<xs:complexType name="SpineVolumeProperty">
+  <xs:sequence>
+    <!-- Total spine volume reported in cubic micrometers. -->
+    <xs:element name="n" type="xs:decimal" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="Volume" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  Denotes when a spine is detected by an automated algorithm versus a
+  manual delineation.
+-->
+<xs:complexType name="SpineGeneratedProperty">
+  <xs:sequence>
+    <!--
+      If a spine is detected by an automated algorithm, the value will be 1.
+      If a manual algorithm was used, the value is 0.
+    -->
+    <xs:element name="n">
+      <xs:simpleType>
+        <xs:restriction base="xs:integer">
+          <xs:enumeration value="0" /> <!-- automated  -->
+          <xs:enumeration value="1" /> <!-- manual -->
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:element>
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="Generated" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  A string of 21 numbers that report the spine metrics.
+-->
+<xs:complexType name="SpineGeneratedMetricsProperty">
+  <xs:sequence>
+    <!--
+        [00] xs:integer | Version
+             The data format version for the GeneratedMetrics child element.
+        [01] xs:decimal | Total Extent
+             Shortest distance from the furthest identified voxel to the
+             surface of the dendrite.
+        [02] xs:decimal | Head Layer
+             The diameter of the spine head calculated in the XY plane at
+             the center of the head layer.
+        [03] xs:decimal | Head Layer Position X
+             X coordinate of the center of the head of the spine.
+        [04] xs:decimal | Head Layer Position Y
+             Y coordinate of the center of the head of the spine.
+        [05] xs:decimal | Head Layer Position Z
+            Z coordinate of the center of the head of the spine.
+        [05] xs:decimal | Neck Layer Diameter
+             The diameter of the spine neck calculated in the XY plane at
+             the center of the neck layer.
+        [07] xs:decimal | Neck Layer Extent
+             Shortest distance from the center of the neck layer diameter
+             to the surface of the dendrite.
+        [08] xs:decimal | Head Layer Extent
+             Shortest distance from the center of the head layer diameter
+             to the surface of the dendrite.
+        [09] xs:decimal | Surface Area
+             The surface area of the mesh for the detected spine.
+        [10] xs:decimal | Contact Area
+             Cross-sectional area of contact between the spine and its dendrite.
+        [11] xs:integer | Voxel Count
+             Total number of foreground voxels that make up the spine.
+        [12] xs:integer | Attached Flag
+             0 = spine is detached from the dendrite
+             1 = spine is attached to the dendrite
+        [13] xs:decimal | Anchor Radius
+             Refers to the radius of the dendrite at the point where the
+             spine attaches.
+        [14] xs:integer | Anchor Offset
+             Defines the position along the tree, between the attachment
+             and the previous point that gives the precise location of the
+             center of the spine.
+        [15] xs:integer | Auto Classified Flag
+             0 = manually
+             1 = automatically
+        [16] xs:decimal | Plane Angle
+             Angle between the spine attachment vector and the optical plane.
+             Zero means that the spine axis is parallel to the optical plane.
+             90 (+/-) means that the axis is perpendicular to the optical plane.
+        [17] xs:integer | Is 2D Spine
+             0 = the spine was detected in 3D image
+             1 = the spine was detected in 2D image
+        [18] xs:decimal | Backbone Length
+             Backbone length to the center minus distance between dendritic
+             surface and insertion point on the centerline.
+        [19] xs:integer | Classifier
+             0 = rule-based classifier using the total extent for the length
+             1 = rule-based classifier using the spine backbone to compute the length
+        [20] xs:decimal | Mean Luminance
+             The mean luminance value of all foreground voxels within the spine.
+    -->
+    <xs:element name="n" type="xs:decimal" minOccurs="21" maxOccurs="21" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="GeneratedMetrics" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  Describes the connected points that make up the reconstructed spine.
+  The points are listed in order of proximity to the branch the spine
+  falls on.
+-->
+<xs:complexType name="SpineBackboneProperty">
+  <xs:sequence>
+    <!--
+        [0] xs:integer | The total number of points that make up the spine.
+      [1-4] xs:decimal | X, Y, Z, D coordinates of first point
+      [5-8] xs:decimal | X, Y, Z, D coordinates of second point
+      etc.
+    -->
+    <xs:element name="n" type="xs:decimal" minOccurs="1" maxOccurs="unbounded" />
+  </xs:sequence>
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="Backbone" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!-- MBF TYPES : COMPLEX -->
+
+<!--
+  The nested element <point> is included in several elements of the
+  neuromorphological file format to denote a point at a distinct
+  X, Y, and Z location with a 3D micrometer coordinate space.
+  The <point> element also includes a diameter value indicating the
+  thickness at that point. These coordinates are represented using
+  the corresponding x, y, z, and d attributes and are always in
+  micrometer units.
+-->
+<xs:complexType name="point">
+  <xs:attribute name="x" type="xs:decimal" />
+  <xs:attribute name="y" type="xs:decimal" />
+  <xs:attribute name="z" type="xs:decimal" />
+  <xs:attribute name="d" type="xs:decimal" />
+  <xs:attribute name="sid" type="xs:token" />
+</xs:complexType>
+
+<!--
+  Base for both <marker> types (list of points || puntum)
+-->
+<xs:complexType name="marker_base">
+  <!--
+    A text field that describes the symbol shape used to mark a point.
+    TODO: enumerate accepted marker types
+  -->
+  <xs:attribute name="type" type="xs:string" />
+  <!--
+    Indicates the marker’s symbol color, represented with a hexadecimal
+    RGB value.
+  -->
+  <xs:attribute name="color" type="color" />
+  <!--
+    A user-defined name
+  -->
+  <xs:attribute name="name" type="xs:string" />
+  <!--
+    This value will be set to true if the marker is used to mark a
+    varicosity, otherwise, the value is set to false to indicate a
+    typical marker element.
+  -->
+  <xs:attribute name="varicosity" type="xs:boolean" />
+</xs:complexType>
+
+<!--
+  The neuromorphological file format uses the <marker> element to
+  represent single points in the data file.
+  The only child element of the <marker> is the <point> element indicating
+  the X, Y, and Z, location of the <marker> and the diameter of the point.
+  Each <point> represents the center of one marker of specific marker type.
+  A <marker> type can hold one or many <point> elements, each representing
+  an independent marked location.
+-->
+<xs:complexType name="marker">
+  <xs:complexContent>
+    <xs:extension base="marker_base">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="property" type="ChannelProperty" minOccurs="0" maxOccurs="1" />
+        <xs:element name="point" type="point" minOccurs="0" maxOccurs="unbounded" />
+      </xs:choice>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<!--
+  Punctum volumes are represented with an extended version of the
+  <marker> element.
+  They contain all of the <marker> attributes, which are detailed in the
+  <marker> section above.
+  All punctum <marker> elements have the value "Punctum" for the name
+  attribute differentiating them from a typical <marker> element.
+  Similar to <marker> elements, punctum also include one <point> child
+  element.
+  This <point> describes the punctum’s center of mass, reporting an
+  X, Y, and Z coordinate along with a diameter.
+-->
+<xs:complexType name="punctum">
+  <xs:complexContent>
+    <xs:extension base="marker_base">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <!--
+          ChannelProperty | PunctumProperty | VolumeRLEProperty
+        -->
+        <xs:element name="property" type="property" minOccurs="0" maxOccurs="3" />
+        <xs:element name="point" type="point" minOccurs="0" maxOccurs="1" />
+      </xs:choice>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<xs:complexType name="marker_or_punctum">
+  <xs:complexContent>
+    <xs:extension base="marker_base">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <!--
+          ChannelProperty | PunctumProperty | VolumeRLEProperty
+        -->
+        <xs:element name="property" type="property" minOccurs="0" maxOccurs="3" />
+        <xs:element name="point" type="point" minOccurs="0" maxOccurs="unbounded" />
+      </xs:choice>
+    </xs:extension>
+  </xs:complexContent>
+</xs:complexType>
+
+<!--
+  A <contour> element is a named list of sequentially connected points.
+  The <point> child element is described above.
+-->
+<xs:complexType name="contour">
+  <xs:choice minOccurs="0" maxOccurs="unbounded">
+    <!--
+      GUIDProperty | FillDensityProperty | ChannelProperty | TraceAssociationProperty
+    -->
+    <xs:element name="property" type="property" minOccurs="0" maxOccurs="4" />
+    <xs:element name="resolution" type="xs:decimal" minOccurs="0" maxOccurs="1" />
+    <xs:element name="point" type="point" minOccurs="0" maxOccurs="unbounded" />
+  </xs:choice>
+  <!--
+    The contour name.
+  -->
+  <xs:attribute name="name" type="xs:string" />
+  <!--
+    A hexadecimal RGB value denotes the contour color.
+  -->
+  <xs:attribute name="color" type="color" />
+  <!--
+    Indicates if the contour is open or closed. When the value is "true",
+    the contour is closed, meaning the start and endpoint are connected.
+    The value "false" indicates the contour is an open and the start and
+    endpoints of the contour are not connected.
+  -->
+  <xs:attribute name="closed" type="xs:boolean" />
+  <!--
+    The value can be "Contour", "Circle" or "Box".
+    If the shape value is equal to ”Contour” then the series of
+    sequentially connected points inform the contour’s perimeter.
+    Contours with a "Circle" value will always have 2 <point> child
+    elements defining the center point and radius.
+    A contour with shape="Box" will also always have two <point> child
+    elements indicating the upper left and bottom right points of a
+    rectangle.
+  -->
+  <xs:attribute name="shape">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:enumeration value="Contour" />
+        <xs:enumeration value="Circle" />
+        <xs:enumeration value="Box" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  Spines are small projections off of neuronal trees.
+  They have a high postsynaptic density that helps to transmit
+  electrical signals to the cell body.
+  Because spines occur at a unique point location on a neuronal branch,
+  the neuromorphological data format embeds the spine element in the
+  associated branch, recorded between the tree points that the spine occurs.
+  Each <spine> has a set of attributes, <property> elements, and one
+  <point> element used to define the detected object.
+  The <point> child element describes the spine head’s center of mass,
+  reporting the X, Y, and Z coordinates along with the diameter of the
+  spine head.
+
+  The neuromorphological file format includes two modeling methods for
+  a spine, one more simple and succinct than the other.
+  The simple modeling method is referred to as a ball and stick
+  representation.
+  When a spine is manually placed, the head location and thickness is
+  defined using the spine <point> property.
+  The <point> element of the parent <tree> of the <spine> defines the
+  location that the spine connects to the branch.
+-->
+<xs:complexType name="spine">
+  <xs:choice minOccurs="0" maxOccurs="unbounded">
+    <!--
+      SpineClassProperty
+      ColorProperty
+      SpineVolumeProperty
+      SpineGeneratedProperty
+      SpineGeneratedMetricsProperty
+      SpineBackboneProperty
+      VolumeRLEProperty
+    -->
+    <xs:element name="property" type="property" minOccurs="0" maxOccurs="7" />
+    <!--
+      When a spine is manually placed, the head location and thickness
+      is defined using the spine <point> property.
+    -->
+    <xs:element name="point" type="point" minOccurs="0" maxOccurs="1" />
+  </xs:choice>
+  <!--
+    Defines the data format version for the spine child element.
+  -->
+  <xs:attribute name="version" type="xs:integer" />
+  <!--
+    Records the type of spine
+  -->
+  <xs:attribute name="classification" type="SpineClass" />
+</xs:complexType>
+
+<!--
+  Varicosity elements are nested within the relating tree, branch, and
+  point location.
+  It contains five nested <point> elements that coalesce to form the
+  volume of that varicosity.
+-->
+<xs:complexType name="varicosity">
+  <xs:sequence>
+    <xs:element name="point" type="point" minOccurs="5" maxOccurs="5" />
+  </xs:sequence>
+  <!--
+    Defines the data format version for the varicosity child element.
+  -->
+  <xs:attribute name="version" type="xs:integer" />
+  <!--
+    Defines the color of the varicosity, represented with a hexadecimal
+    RGB value.
+  -->
+  <xs:attribute name="color" type="color" />
+  <!--
+    The value "true" indicates the varicosity was detected by an
+    MBF Bioscience software algorithm.
+    The value "false" indicates a manual or alternative detection
+    method was used to create the varicosity.
+  -->
+  <xs:attribute name="generated" type="xs:boolean" />
+  <!--
+    Distance between the first varicosity point to the last varicosity
+    point reported in micrometer units
+  -->
+  <xs:attribute name="length" type="xs:decimal" />
+  <!--
+    Largest diameter along the varicosity profile
+  -->
+  <xs:attribute name="maximumdiameter" type="xs:decimal" />
+  <!--
+    The ratio of the varicosity diameter at the middle point and the
+    underlying branch thickness.
+  -->
+  <xs:attribute name="thicknessratio" type="xs:decimal" />
+  <!--
+    If the varicosity is detected from a 2D image, the value will
+    equal "true".
+    The is2d attribute will be marked "false" if the varicosity is
+    detected from a 3D image stack.
+  -->
+  <xs:attribute name="is2d" type="xs:boolean" />
+  <!--
+    Defines the position along the tree, between the attachment and
+    the previous point that gives the
+    precise location of the center of the varicosity.
+  -->
+  <xs:attribute name="anchoroffset" type="xs:decimal" />
+  <!--
+    Describes the point on the branch where the center of the varicosity is attached.
+  -->
+  <xs:attribute name="attachment" type="xs:string" />
+</xs:complexType>
+
+<!--
+  Used to alter the Used to alter the displayed thickness of dendrites
+  to resemble the optical aberration in z. This can be caused by both
+  the point spread function and by refractive index mismatch between the
+  specimen and the lens immersion medium. The diameter of a branch in z
+  is adjusted using the following equation, Dz= Dxy*S, where Dxy is the
+  recorded centerline diameter on the xy plane and S is the smear factor.
+  The smear factor is calculated using this equation, S=α* Dxyβ.
+  The minimum diameter is 1.0 µm, even if S values are less than 1.0.
+-->
+<xs:complexType name="zsmear">
+  <xs:attribute name="alpha" type="xs:decimal" />
+  <xs:attribute name="beta" type="xs:decimal" />
+</xs:complexType>
+
+<!--
+  In the neuromorphological file structure, the <tree> element is used to
+  represent non-looping branching structures within microscopy images such
+  as axons, dendrites, and airways.
+
+  Trees consist of an origin, branches, nodes, and endings.
+  The starting point of <tree> element is referred to as the origin and
+  the points that follow make up the root branch of the <tree>.
+  All trees must have at least an origin and root branch, but typically
+  have branching points called nodes. Nodes are where a segment of the
+  <tree> splits into multiple <branch> child elements.
+  The <branch> elements are made up of an ordered list of points that
+  connect nodes to nodes, and nodes to endings.
+  Endings are the last point of a <branch> or <tree> where the segment
+  terminates.
+-->
+<xs:complexType name="tree">
+  <xs:choice minOccurs="0" maxOccurs="unbounded">
+    <xs:element name="zsmear" type="zsmear" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="point" type="point" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="branch" type="tree" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="spine" type="spine" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="varicosity" type="varicosity" minOccurs="0" maxOccurs="unbounded" />
+  </xs:choice>
+  <!--
+    Indicates the tree color via a hexadecimal RGB value.
+  -->
+  <xs:attribute name="color" type="color" />
+  <!--
+    A text field that describes the tree type.
+    Value options currently include "Axon", "Dendrite", and "Apical Dendrite".
+  -->
+  <xs:attribute name="type">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:enumeration value="Axon" />
+        <xs:enumeration value="Dendrite" />
+        <xs:enumeration value="Apical Dendrite" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+  <!--
+    Indicates the ending type for a tree or branch.
+    The value can equal "Normal", "High", "Low", "Incomplete",
+    "Origin", "Generated" or "Midpoint" to describe how the branch ends.
+  -->
+  <xs:attribute name="leaf">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:enumeration value="Normal" />
+        <xs:enumeration value="High" />
+        <xs:enumeration value="Low" />
+        <xs:enumeration value="Incomplete" />
+        <xs:enumeration value="Origin" />
+        <xs:enumeration value="Generated" />
+        <xs:enumeration value="Midpoint" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+</xs:complexType>
+
+<!--
+  Each termination point is detailed in the <node> element.
+  All <node> elements are nested within the <nodes> child element.
+-->
+<xs:complexType name="node">
+  <xs:sequence>
+    <xs:element name="point" type="point" minOccurs="1" maxOccurs="1" />
+  </xs:sequence>
+  <!-- A unique identifier is generated for every node within the vessel. -->
+  <xs:attribute name="id" type="xs:integer" />
+</xs:complexType>
+
+<!--
+  A set of terminations points that include the vessel’s origin, ending,
+  and any branch points.
+-->
+<xs:complexType name="nodes">
+  <xs:sequence>
+    <xs:element name="node" type="node" minOccurs="0" maxOccurs="unbounded" />
+  </xs:sequence>
+</xs:complexType>
+
+<!--
+  Each branch of the vessel is constructed of a collection of sequentially
+  ordered and connected points.
+-->
+<xs:complexType name="edge">
+  <xs:sequence>
+    <xs:element name="point" type="point" minOccurs="2" maxOccurs="2" />
+  </xs:sequence>
+  <!-- The unique identifier is generated for every edge. -->
+  <xs:attribute name="id" type="xs:integer" />
+</xs:complexType>
+
+<!--
+  A set of edges or branches that makes up the vessel
+-->
+<xs:complexType name="edges">
+  <xs:sequence>
+    <xs:element name="edge" type="edge" minOccurs="0" maxOccurs="unbounded" />
+  </xs:sequence>
+</xs:complexType>
+
+<!--
+  Defines the relationship between edge and node elements, indicating
+  the branches and loops that form the vessel.
+-->
+<xs:complexType name="edgelist">
+  <!-- The unique identifier is generated for every edgelist. -->
+  <xs:attribute name="id" type="xs:integer" />
+  <!-- Indicates the ID of the edge element that the edgelist relates to a start and end node.. -->
+  <xs:attribute name="edge" type="xs:integer" />
+  <!-- The ID of the node that the edge starts from -->
+  <xs:attribute name="sourcenode" type="xs:integer" />
+  <!-- The ID of the node that the edge ends at. -->
+  <xs:attribute name="targetnode" type="xs:integer" />
+</xs:complexType>
+
+<!--
+  A set of edgelist child elements whose attributes define the relationship
+  between an edge and its two nodes.
+-->
+<xs:complexType name="edgelists">
+  <xs:sequence>
+    <xs:element name="edgelist" type="edgelist" minOccurs="0" maxOccurs="unbounded" />
+  </xs:sequence>
+</xs:complexType>
+
+<!--
+  A graph branching structure that allows for looping connections to
+  model vasculature or nerve bundles.
+-->
+<xs:complexType name="vessel">
+  <xs:all>
+    <xs:element name="property" type="ChannelProperty" minOccurs="0" maxOccurs="1" />
+    <xs:element name="nodes" type="nodes" minOccurs="0" maxOccurs="1" />
+    <xs:element name="edges" type="edges" minOccurs="0" maxOccurs="1" />
+    <xs:element name="edgelists" type="edgelists" minOccurs="0" maxOccurs="1" />
+  </xs:all>
+  <!-- Defines the data format version for the vessel child element. -->
+  <xs:attribute name="version" type="xs:integer" />
+  <!-- Defines the color of the vessel, represented with a hexadecimal RGB value. -->
+  <xs:attribute name="color" type="color" />
+  <xs:attribute name="type">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:enumeration value="directed" />
+        <xs:enumeration value="undirected" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+  <!-- A user-defined classification name for a vessel. -->
+  <xs:attribute name="name" type="xs:string" />
+</xs:complexType>
+
+<!--
+  A trace element with two points connecting to form a line with an arrowhead.
+  Used to draw attention to structures in the image or tracing.
+-->
+<xs:complexType name="arrow">
+  <xs:sequence>
+    <!-- Note that the diameter (d) of an <arrow> <point> is always set to "1.00". -->
+    <xs:element name="point" type="point" minOccurs="2" maxOccurs="2" />
+  </xs:sequence>
+  <!--
+    The name value of an arrow will always be "Arrow".
+  -->
+  <xs:attribute name="name">
+    <xs:simpleType>
+      <xs:restriction base="xs:string">
+        <xs:pattern value="Arrow" />
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:attribute>
+  <!--
+    Defines the color of the arrow, represented with a hexadecimal RGB value.
+  -->
+  <xs:attribute name="color" type="color" />
+  <!--
+    If the value is true, the arrow includes a head and a tail.
+    If the value is false, the arrow only has a head.
+  -->
+  <xs:attribute name="tail" type="xs:boolean" />
+</xs:complexType>
+
+<!--
+  A user-defined text added to any location of the data file.
+-->
+<xs:complexType name="text">
+  <xs:all>
+    <xs:element name="font" minOccurs="0" maxOccurs="1">
+      <xs:complexType>
+        <!-- Typeface or font name. -->
+        <xs:attribute name="color" type="xs:string" />
+        <!-- Text point size. -->
+        <xs:attribute name="size" type="xs:decimal" />
+      </xs:complexType>
+    </xs:element>
+    <!-- Note that the diameter (d) of the <text> <point> is always set to "0.00". -->
+    <xs:element name="point" type="point" minOccurs="0" maxOccurs="1" />
+    <!-- The user-defined text string. -->
+    <xs:element name="value" type="xs:string" minOccurs="0" maxOccurs="1" />
+  </xs:all>
+  <!--
+    Defines the color of the text, represented with a hexadecimal RGB value.
+  -->
+  <xs:attribute name="color" type="color" />
+</xs:complexType>
+
+<!--
+  A 2D scalebar set to a user-defined length based on the X and Y pixel scaling.
+-->
+<xs:complexType name="scalebar">
+  <xs:all>
+    <!-- Note that the diameter (d) of the <text> <point> is always set to "0.00". -->
+    <xs:element name="point" type="point" minOccurs="0" maxOccurs="1" />
+    <!-- Length of the scalebar (µm). Must be a positive integer. -->
+    <xs:element name="value" type="xs:integer" minOccurs="0" maxOccurs="1" />
+    <!-- If true, the numerical <value> of the scalebar is displayed. If false, the <value> is hidden. -->
+    <xs:element name="showlabel" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+    <!-- If true, the units (µm) of the scalebar are displayed. If false, the units are hidden. -->
+    <xs:element name="showunits" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+  </xs:all>
+  <!--
+    Defines the color of the scalebar, represented with a hexadecimal RGB value.
+  -->
+  <xs:attribute name="color" type="color" />
+</xs:complexType>
+
+<!--
+  The <thumbnail> element stores data to create a small graphical (64x64)
+  representation of the tracing data. Each of the 64 <thumbnail-line> elements
+  represent one row in the thumbnail. The 64 pixels in each row are represented
+  with a 3-byte hexadecimal (RRGGBB) alphanumeric character.
+-->
+<xs:complexType name="thumbnail">
+  <xs:sequence>
+    <xs:element name="thumbnail-line" type="hex" minOccurs="0" maxOccurs="unbounded" />
+  </xs:sequence>
+  <xs:attribute name="cols" type="xs:integer" />
+  <xs:attribute name="rows" type="xs:integer" />
+</xs:complexType>
+
+<!--
+  The <images> element can contain one or many nested <image> child elements.
+  This enables the neuromorphological data file to be associated with any number of source images.
+-->
+<xs:complexType name="image">
+  <xs:choice minOccurs="0" maxOccurs="unbounded">
+    <xs:element name="filename" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="channels" minOccurs="0" maxOccurs="1">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="channel" minOccurs="0" maxOccurs="unbounded">
+            <xs:complexType>
+              <!-- Identifies the pseudocolor of the color channel. -->
+              <xs:attribute name="id" type="xs:string" />
+              <!--
+                Records the selected color channel number from the corresponding
+                source image in the <filename> element. Starts at 0.
+              -->
+              <xs:attribute name="source" type="xs:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+        <!--
+          The value of the merge attribute will be "yes" if the channels
+          have been merged from separate image files and "no" if they have not.
+        -->
+        <xs:attribute name="merge">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="yes" />
+              <xs:enumeration value="no" />
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:attribute>
+      </xs:complexType>
+    </xs:element>
+    <!-- The size of each pixel in x and y. -->
+    <xs:element name="scale" minOccurs="0" maxOccurs="1">
+      <xs:complexType>
+        <!-- The X scaling of the image in µm/pixel. -->
+        <xs:attribute name="x" type="xs:decimal" />
+        <!-- The Y scaling of the image in µm/pixel. -->
+        <xs:attribute name="y" type="xs:decimal" />
+      </xs:complexType>
+    </xs:element>
+    <!--
+      Reports the attributes and values for the X, Y, and Z
+      coordinates of the upper, left-hand corner of the image.
+    -->
+    <xs:element name="coord" minOccurs="0" maxOccurs="1">
+      <xs:complexType>
+        <!-- The X location of the image origin (µm). -->
+        <xs:attribute name="x" type="xs:decimal" />
+        <!-- The Y location of the image origin (µm). -->
+        <xs:attribute name="y" type="xs:decimal" />
+        <!-- The Z location of the image origin (µm). -->
+        <xs:attribute name="z" type="xs:decimal" />
+      </xs:complexType>
+    </xs:element>
+    <!--
+      The zspacing element uses the z and slices attributes to describe
+      the relationship of image planes that compile into a 3D image.
+    -->
+    <xs:element name="zspacing" minOccurs="0" maxOccurs="1">
+      <xs:complexType>
+        <!-- Spacing between each image plane in micrometer units. -->
+        <xs:attribute name="z" type="xs:decimal" />
+        <!-- The total number of image planes in a 3D image. -->
+        <xs:attribute name="slices" type="xs:integer" />
+      </xs:complexType>
+    </xs:element>
+  </xs:choice>
+</xs:complexType>
+
+<!--
+  Raw image data is not saved within neuromorphological data files,
+  rather they are linked with a file location and name and other
+  information about the image.
+
+  The <images> element in the header can contain one or many <image>
+  elements enabling the neuromorphological data file to be associated
+  with any number of source images. The images can be either 2D
+  (a single image plane) or 3D (multiple image planes from a single
+  file or multiple files).
+  Image data can be combined in several ways inside the neuromorphological
+  data file. The simplest is the single 3D or 2D image file.
+-->
+<xs:complexType name="images">
+  <xs:sequence>
+    <xs:element name="image" type="image" minOccurs="0" maxOccurs="unbounded" />
+  </xs:sequence>
+</xs:complexType>
+
+<!-- Metadata describing the subject from which the image sample originated. -->
+<xs:complexType name="subject">
+  <!--
+    The subject’s species is reported using the NCBI Taxon identifier to
+    ensure databases can query this information and relate synonyms to
+    the ID.
+  -->
+  <xs:attribute name="species" type="xs:string" />
+  <!--
+    A user-defined subject identifier based on the animal sample
+    naming scheme that the researcher prefers
+  -->
+  <xs:attribute name="subjectid" type="xs:string" />
+  <!--
+    Subject sex can either be reported as male or female.
+    Can be set to "blind to condition" while data collection is in
+    progress if this is part of the experimental design.
+  -->
+  <xs:attribute name="sex" type="xs:string" />
+  <!--
+    Age is a user-defined value and can be reported in a unit of either
+    days, weeks, months, or years. Can be set to "blind to condition"
+    while data collection is in progress if this is part of the
+    experimental design.
+  -->
+  <xs:attribute name="age" type="xs:string" />
+</xs:complexType>
+
+<!-- 	Defines the anatomy terminology list used to annotate an image. -->
+<xs:complexType name="atlas">
+  <!--
+    The organ attribute indicates which subset of terms was used to
+    annotate, grouped by major organ.
+  -->
+  <xs:attribute name="organ" type="xs:string" />
+  <!-- Indicates the parcellation scheme or atlas -->
+  <xs:attribute name="label" type="xs:string" />
+  <!-- A URL link to the term lists origin. -->
+  <xs:attribute name="rootid" type="xs:string" />
+</xs:complexType>
+
+<!-- Additional subject and annotation metadata. -->
+<xs:complexType name="sparcdata">
+  <xs:all>
+    <!-- Metadata describing the subject from which the image sample originated. -->
+    <xs:element name="subject" type="subject" minOccurs="0" maxOccurs="1" />
+    <!-- Defines the anatomy terminology list used to annotate an image. -->
+    <xs:element name="atlas" type="atlas" minOccurs="0" maxOccurs="1" />
+  </xs:all>
+</xs:complexType>
+
+<!--
+  Each serial Z section generated receives a <section> element that
+  includes information for the unique section.
+-->
+<xs:complexType name="section">
+  <!--
+    A sequential identifier for each section (S1, S2, S3… SN).
+  -->
+  <xs:attribute name="sid" type="xs:string" />
+  <!--
+    Default names for each section are "Section N", where N is
+    incremented by the sectioninterval. The names can be user modified.
+  -->
+  <xs:attribute name="name" type="xs:string" />
+  <!-- The highest Z value (µm) of the serial section. -->
+  <xs:attribute name="top" type="xs:decimal" />
+  <!-- Equal to the distance from one section to the next (µm). -->
+  <xs:attribute name="cutthickness" type="xs:decimal" />
+  <!--
+    Used to represent the physical thickness (µm) of the tissue on the
+    slide following section processing and the associated shrinkage.
+  -->
+  <xs:attribute name="mountedthickness" type="xs:decimal" />
+</xs:complexType>
+
+<!--
+  Contains parameters about the sections created for a data file.
+-->
+<xs:complexType name="sectionmanager">
+  <!--
+    The section of the data file the user was on when the document was
+    last saved.
+  -->
+  <xs:attribute name="currentsection" type="xs:string" />
+  <!--
+    Indicates the interval of the section names.
+    A section interval i with a startingsection at N0 would produce section names:
+    Section N0, Section N0+i, Section N0+2i, Section N0+3i … Section N0+(n)i
+    where n is the total number of sections.
+  -->
+  <xs:attribute name="sectioninterval" type="xs:string" />
+  <!-- The first section in the interval list. -->
+  <xs:attribute name="startingsection" type="xs:string" />
+</xs:complexType>
+
+<!--
+  Stores sequentially ordered serial Z sections for the data file that
+  corresponds physically or virtually sectioned histologic tissue.
+-->
+<xs:complexType name="filefacts">
+  <xs:choice minOccurs="0" maxOccurs="unbounded">
+    <!--
+      Each serial Z section generated receives a <section> element
+      that includes information for the unique section.
+    -->
+    <xs:element name="section" type="section" minOccurs="0" maxOccurs="unbounded" />
+    <!-- Contains parameters about the sections created for a data file. -->
+    <xs:element name="sectionmanager" type="sectionmanager" minOccurs="0" maxOccurs="1" />
+  </xs:choice>
+</xs:complexType>
+
+<!-- MBF SCHEMA -->
+
+<!--
+  The remainder of the data file is embedded within the <mbf> element,
+  including file header information and the elements that comprise the
+  tracing data used to model neuronal morphology and surrounding anatomies.
+  The closing </mbf> is the last line of all neuromorphological data files.
+-->
+<xs:element name="mbf">
+  <xs:complexType>
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <!-- ... HEADER .............................................. -->
+      <!--
+        The <description> element is a string of user optional text
+        describing the contents of the data file. The format of the text
+        is character data indicated by the CDATA section, used to
+        differentiate the text block from markup.
+        ```
+        <description>
+          <![CDATA[Example description of image segmentation file]]>
+        </description>
+        ```
+      -->
+      <xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1" />
+      <!--
+        Stores sequentially ordered serial Z sections for the data file
+        that corresponds physically or virtually sectioned histologic
+        tissue.
+      -->
+      <xs:element name="filefacts" type="filefacts" minOccurs="0" maxOccurs="1" />
+      <!--
+        Additional subject and annotation metadata.
+      -->
+      <xs:element name="sparcdata" type="sparcdata" minOccurs="0" maxOccurs="1" />
+      <!--
+        The <property> element named "TimePointManager" will always be
+        present in the neuromorphological data files, however, it is not
+        used at this time.
+        The element can be disregarded.
+      -->
+      <xs:element name="property" type="TimePointManagerProperty"  minOccurs="1" maxOccurs="1" />
+      <!--
+        The <images> element can contain one or many nested <image>
+        child elements.
+        This enables the neuromorphological data file to be associated
+        with any number of source images.
+      -->
+      <xs:element name="images" type="images" minOccurs="0" maxOccurs="1" />
+      <!--
+        The <thumbnail> element stores data to create a small graphical
+        (64x64) representation of the tracing data. Each of the 64
+        <thumbnail-line> elements represent one row in the thumbnail.
+        The 64 pixels in each row are represented with a 3-byte
+        hexadecimal (RRGGBB) alphanumeric character.
+      -->
+      <xs:element name="thumbnail" type="thumbnail" minOccurs="0" maxOccurs="1" />
+      <!-- ... BODY ................................................ -->
+      <!--
+        A symbol placed in a single point location (x, y, and z).
+      -->
+      <xs:element name="marker" type="marker_or_punctum" minOccurs="0" maxOccurs="unbounded" />
+      <!--
+        A named list of sequentially connected points.
+      -->
+      <xs:element name="contour" type="contour" minOccurs="0" maxOccurs="unbounded" />
+      <!--
+        Used to model branching structures with no loops.
+        A tree is represented with an ordered list of connected points.
+      -->
+      <xs:element name="tree" type="tree" minOccurs="0" maxOccurs="unbounded" />
+      <!--
+        A graph branching structure that allows for looping connections to
+        model vasculature or nerve bundles.
+      -->
+      <xs:element name="vessel" type="vessel" minOccurs="0" maxOccurs="unbounded" />
+      <!--
+        A trace element with two points connecting to form a line with an arrowhead.
+        Used to draw attention to structures in the image or tracing.
+      -->
+      <xs:element name="arrow" type="arrow" minOccurs="0" maxOccurs="unbounded" />
+      <!--
+        A user-defined text added to any location of the data file.
+      -->
+      <xs:element name="text" type="text" minOccurs="0" maxOccurs="unbounded" />
+      <!--
+        A 2D scalebar set to a user-defined length based on the X and Y pixel scaling.
+      -->
+      <xs:element name="scalebar" type="scalebar" minOccurs="0" maxOccurs="unbounded" />
+    </xs:choice>
+    <!--
+    Reports the version number of the neuromorphological data file structure.
+    It is necessary to define the expected data structure for the document
+    that follows to ensure older data versions are supported.
+    The current neuromorphological data file version number is 4.0.
+    -->
+    <xs:attribute name="version" type="xs:string"/>
+    <!--
+    The name of the software that generated the neuromorphological data file.
+    -->
+    <xs:attribute name="appname" type="xs:string"/>
+    <!--
+    The version of the software that generated the neuromorphological data file.
+    MBF Bioscience software versions are reported with the year, version,
+    and minor version (YYYY.V.M).
+    -->
+    <xs:attribute name="appversion" type="xs:string"/>
+    <!--
+    The Research Resource Identifier (RRID) for the software application.
+    -->
+    <xs:attribute name="apprrid" type="xs:string"/>
+    <!--
+    Institution Research Resource Identifier (RRID).
+    -->
+    <xs:attribute name="insrrid" type="xs:string"/>
+  </xs:complexType>
+</xs:element>
+
+</xs:schema>
