@@ -2,7 +2,7 @@ import os
 import xmlschema
 
 
-def parse_simple(fileobj):
+def parse(fileobj):
     """
     Parse a MBF XML file as a JSON
 

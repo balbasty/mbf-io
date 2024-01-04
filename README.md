@@ -33,7 +33,34 @@ pip install git+https://github.com/balbasty/mbf-io[all]
 ### MicroBrightfield's XML format
 
 ```python
-mbfio.xml.parse_stereo(fileobj, dtype=None, space='mbf', unit='um', image=0)
+mbfio.xml.parse(fileobj)
+"""
+Parse a MBF XML file as a JSON
+
+This function uses a XSD 1.1 schema and the `xmlschema` library to
+validate and parse the XML.
+
+It returns a JSON object, where children elements and attributes
+are saved as (key, value) pairs in a python dictionary, with
+attribute names prepended with a "@".
+Element keys only map to a value if the schema specifies that
+a single instance must exist (minOccurs == maxOccurs == 1).
+Otherwise, element keys map to a list of instances.
+
+Parameters
+----------
+fileobj : str or file-like
+    Path (or reader) to an XML file, or a pre-loaded XML file.
+
+Returns
+-------
+obj : object
+    a JSON-like object
+"""
+```
+
+```python
+mbfio.xml.parse_stereo(fileobj, space='mbf', unit='um', image=0)
 """
 Parse a MBF XML file and extract stereology into a JSON
 
@@ -41,8 +68,9 @@ Parameters
 ----------
 fileobj : str or file-like
     Path (or reader) to an XML file, or a pre-loaded XML file.
-dtype : np.dtype
-    Datatype to use for the coordinates array. (default: float64)
+
+Other Parameters
+----------------
 space : {'mbf', 'voxel'}
     Whether to keep point coordinates in MBF's coordinate system
     ([+x, -y, -z] with origin at corner of top-left voxel) or to
@@ -90,7 +118,7 @@ info : {
 ```
 
 ```python
-mbfio.xml.parse_stereo_markers(fileobj, dtype=None, space='mbf', unit='um', image=0)
+mbfio.xml.parse_stereo_markers(fileobj, space='mbf', unit='um', image=0)
 """
 Parse a MBF XML file and extract stereology markers into a JSON
 
@@ -98,8 +126,9 @@ Parameters
 ----------
 fileobj : str or file-like
     Path (or reader) to an XML file, or a pre-loaded XML file.
-dtype : np.dtype
-    Datatype to use for the coordinates array. (default: float64)
+
+Other Parameters
+----------------
 space : {'mbf', 'voxel'}
     Whether to keep point coordinates in MBF's coordinate system
     ([+x, -y, -z] with origin at corner of top-left voxel) or to
@@ -121,7 +150,7 @@ markers : {
 ```
 
 ```python
-mbfio.xml.parse_sites(fileobj, dtype=None, space='mbf', unit='um', image=0)
+mbfio.xml.parse_sites(fileobj, space='mbf', unit='um', image=0)
 """
 Parse a MBF XML file and extract site contours into a JSON
 
@@ -129,8 +158,9 @@ Parameters
 ----------
 fileobj : str or file-like
     Path (or reader) to an XML file, or a pre-loaded XML file.
-dtype : np.dtype
-    Datatype to use for the coordinates array. (default: float64)
+
+Other Parameters
+----------------
 space : {'mbf', 'voxel'}
     Whether to keep point coordinates in MBF's coordinate system
     ([+x, -y, -z] with origin at corner of top-left voxel) or to
@@ -161,7 +191,7 @@ sites : {
 
 ```python
 mbfio.xml.parse_contours(fileobj, exclude_keys=SITE_KEYS, include_keys=None,
-                         dtype=None, space='mbf', unit='um', image=0)
+                         space='mbf', unit='um', image=0)
 """
 Parse a MBF XML file and extract contours into a JSON
 
@@ -176,8 +206,9 @@ exclude_keys : list[str]
     (default: contours encoding stereoloical counting sites)
 include_keys : list[str]
     Only parse these contours
-dtype : np.dtype
-    Datatype to use for the coordinates array. (default: float64)
+
+Other Parameters
+----------------
 space : {'mbf', 'voxel'}
     Whether to keep point coordinates in MBF's coordinate system
     ([+x, -y, -z] with origin at corner of top-left voxel) or to

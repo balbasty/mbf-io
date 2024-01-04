@@ -52,16 +52,18 @@ def is_inside(points, vertices, faces=None):
     check : (...) array[bool]
 
     """
-    points = np.asarray(points)
     vertices = np.asarray(vertices)
+    if np.issubdtype(vertices.dtype, np.integer):
+        vertices = np.asarray(vertices, dtype=np.float64)
+    points = np.asarray(points, dtype=vertices.dtype)
     if faces is None:
         faces = [(i, i+1) for i in range(len(vertices)-1)]
         faces += [(len(vertices)-1, 0)]
-        faces = np.asarray(faces, dtype='int64')
+        faces = np.asarray(faces)
 
     if mesh_sdt:
+        torch_vertices = torch.as_tensor(vertices)
         torch_points = torch.as_tensor(points)
-        torch_vertices = torch.as_tensor(vertices, dtype=torch_points.dtype)
         torch_faces = torch.as_tensor(faces, dtype=torch.long)
         mask = mesh_sdt(torch_points, torch_vertices, torch_faces) > 0
         return mask.numpy()
@@ -83,8 +85,6 @@ def is_inside_slow(points, vertices, faces=None):
     #   intersection have a positive coordinate along the ray.
     batch = points.shape[:-1]
     dim = points.shape[-1]
-    if np.issubdtype(points.dtype, np.integer):
-        points = points.astype(np.float64)
     eps = np.finfo(points.dtype).resolution
     cross = np.zeros_like(points, shape=batch, dtype='int64')
 

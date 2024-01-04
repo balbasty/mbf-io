@@ -1,19 +1,19 @@
 __all__ = [
-    'parse_simple',
+    'parse',
     'parse_contours',
     'parse_sites',
     'parse_stereo_markers',
     'parse_stereo',
 ]
 import numpy as np
-from .xml_base import parse_simple
+from .xml_base import parse
 from .utils import make_vox2mbf, convert_unit, convert_unit_
 
 
 SITE_KEYS = ('TopRight', 'LeftBottom')
 
 def parse_contours(fileobj, exclude_keys=SITE_KEYS, include_keys=None,
-                   dtype=None, space='mbf', unit='um', image=0):
+                   space='mbf', unit='um', image=0):
     """
     Parse a MBF XML file and extract contours into a JSON
 
@@ -28,8 +28,9 @@ def parse_contours(fileobj, exclude_keys=SITE_KEYS, include_keys=None,
         (default: contours encoding stereoloical counting sites)
     include_keys : list[str]
         Only parse these contours
-    dtype : np.dtype
-        Datatype to use for the coordinates array. (default: float64)
+
+    Other Parameters
+    ----------------
     space : {'mbf', 'voxel'}
         Whether to keep point coordinates in MBF's coordinate system
         ([+x, -y, -z] with origin at corner of top-left voxel) or to
@@ -58,10 +59,10 @@ def parse_contours(fileobj, exclude_keys=SITE_KEYS, include_keys=None,
 
     # parse file
     if not isinstance(fileobj, dict):
-        fileobj = parse_simple(fileobj)
+        fileobj = parse(fileobj)
     obj = fileobj
 
-    vox2mbf = _get_vox2mbf(obj, space, unit, image, dtype)
+    vox2mbf = _get_vox2mbf(obj, space, unit, image)
 
     contours = []
     for contour in obj['contour']:
@@ -72,10 +73,7 @@ def parse_contours(fileobj, exclude_keys=SITE_KEYS, include_keys=None,
             continue
         if contour['@shape'] != 'Contour':
             continue
-        points = np.asarray(
-            [_get_point(p) for p in contour['point']],
-            dtype=dtype
-        )
+        points = np.asarray([_get_point(p) for p in contour['point']])
         points = _convert_coord(points, vox2mbf, space, unit)
 
         contours.append({
@@ -89,7 +87,7 @@ def parse_contours(fileobj, exclude_keys=SITE_KEYS, include_keys=None,
     return contours
 
 
-def parse_sites(fileobj, dtype=None, space='mbf', unit='um', image=0):
+def parse_sites(fileobj, space='mbf', unit='um', image=0):
     """
     Parse a MBF XML file and extract site contours into a JSON
 
@@ -97,8 +95,9 @@ def parse_sites(fileobj, dtype=None, space='mbf', unit='um', image=0):
     ----------
     fileobj : str or file-like
         Path (or reader) to an XML file, or a pre-loaded XML file.
-    dtype : np.dtype
-        Datatype to use for the coordinates array. (default: float64)
+
+    Other Parameters
+    ----------------
     space : {'mbf', 'voxel'}
         Whether to keep point coordinates in MBF's coordinate system
         ([+x, -y, -z] with origin at corner of top-left voxel) or to
@@ -126,10 +125,10 @@ def parse_sites(fileobj, dtype=None, space='mbf', unit='um', image=0):
     }
     """
     if not isinstance(fileobj, dict):
-        fileobj = parse_simple(fileobj)
+        fileobj = parse(fileobj)
     obj = fileobj
 
-    vox2mbf = _get_vox2mbf(obj, space, unit, image, dtype)
+    vox2mbf = _get_vox2mbf(obj, space, unit, image)
 
     sites = {}
 
@@ -140,10 +139,7 @@ def parse_sites(fileobj, dtype=None, space='mbf', unit='um', image=0):
             continue
         sid = contour['point'][0]['@sid']
         sites.setdefault(sid, {'TopRight': [], 'LeftBottom': []})
-        points = np.asarray(
-            [_get_point(p) for p in contour['point']],
-            dtype=dtype
-        )
+        points = np.asarray([_get_point(p) for p in contour['point']])
         points = _convert_coord(points, vox2mbf, space, unit)
         sites[sid][name].append(points)
 
@@ -193,7 +189,7 @@ def parse_sites(fileobj, dtype=None, space='mbf', unit='um', image=0):
     return sites
 
 
-def parse_stereo_markers(fileobj, dtype=None, space='mbf', unit='um', image=0):
+def parse_stereo_markers(fileobj, space='mbf', unit='um', image=0):
     """
     Parse a MBF XML file and extract stereology markers into a JSON
 
@@ -201,8 +197,9 @@ def parse_stereo_markers(fileobj, dtype=None, space='mbf', unit='um', image=0):
     ----------
     fileobj : str or file-like
         Path (or reader) to an XML file, or a pre-loaded XML file.
-    dtype : np.dtype
-        Datatype to use for the coordinates array. (default: float64)
+
+    Other Parameters
+    ----------------
     space : {'mbf', 'voxel'}
         Whether to keep point coordinates in MBF's coordinate system
         ([+x, -y, -z] with origin at corner of top-left voxel) or to
@@ -222,10 +219,10 @@ def parse_stereo_markers(fileobj, dtype=None, space='mbf', unit='um', image=0):
     }
     """
     if not isinstance(fileobj, dict):
-        fileobj = parse_simple(fileobj)
+        fileobj = parse(fileobj)
     obj = fileobj
 
-    vox2mbf = _get_vox2mbf(obj, space, unit, image, dtype)
+    vox2mbf = _get_vox2mbf(obj, space, unit, image)
 
     markers = {}
 
@@ -243,20 +240,20 @@ def parse_stereo_markers(fileobj, dtype=None, space='mbf', unit='um', image=0):
         markers[sid]['site'].append([i, j])
 
         # marker coordinate
-        point = np.asarray(_get_point(marker['point'][0]), dtype=dtype)
+        point = np.asarray(_get_point(marker['point'][0]))
         point = _convert_coord(point, vox2mbf, space, unit)
 
         markers[sid]['coord'].append(point)
 
     # concatenate
     for sid in markers:
-        markers[sid]['coord'] = np.asarray(markers[sid]['coord'], dtype=dtype)
+        markers[sid]['coord'] = np.asarray(markers[sid]['coord'])
         markers[sid]['site'] = np.asarray(markers[sid]['site'])
 
     return markers
 
 
-def parse_stereo(fileobj, dtype=None, space='mbf', unit='um', image=0):
+def parse_stereo(fileobj, space='mbf', unit='um', image=0):
     """
     Parse a MBF XML file and extract stereology into a JSON
 
@@ -264,8 +261,9 @@ def parse_stereo(fileobj, dtype=None, space='mbf', unit='um', image=0):
     ----------
     fileobj : str or file-like
         Path (or reader) to an XML file, or a pre-loaded XML file.
-    dtype : np.dtype
-        Datatype to use for the coordinates array. (default: float64)
+
+    Other Parameters
+    ----------------
     space : {'mbf', 'voxel'}
         Whether to keep point coordinates in MBF's coordinate system
         ([+x, -y, -z] with origin at corner of top-left voxel) or to
@@ -311,11 +309,11 @@ def parse_stereo(fileobj, dtype=None, space='mbf', unit='um', image=0):
 
     """
     if not isinstance(fileobj, dict):
-        fileobj = parse_simple(fileobj)
+        fileobj = parse(fileobj)
     obj = fileobj
 
     info = dict(description=obj['description'], regions={}, sections={})
-    opt = dict(space=space, unit=unit, image=image, dtype=dtype)
+    opt = dict(space=space, unit=unit, image=image)
 
     # 1) Parse ROI contours
     contours = parse_contours(obj, **opt)
