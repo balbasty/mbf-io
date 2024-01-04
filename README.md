@@ -60,7 +60,7 @@ obj : object
 ```
 
 ```python
-mbfio.xml.parse_stereo(fileobj, space='mbf', unit='um', image=0)
+mbfio.xml.parse_stereo(fileobj, space='mbf', unit=None, image=0)
 """
 Parse a MBF XML file and extract stereology into a JSON
 
@@ -77,7 +77,9 @@ space : {'mbf', 'voxel'}
     convert them to voxel space ([+i, +j, +k] with origin at
     center of top-left voxel)
 unit : {'voxel', 'mm', 'um'}
-    Convert point coordinates to this unit.
+    Convert point coordinates to this unit. By default:
+    * space='mbf'   -> unit='um'
+    * space='voxel' -> unit='voxel'
 image : int or str
     Image used to convert MBF coordinates to voxel coordinates
     (Index or name)
@@ -118,7 +120,7 @@ info : {
 ```
 
 ```python
-mbfio.xml.parse_stereo_markers(fileobj, space='mbf', unit='um', image=0)
+mbfio.xml.parse_stereo_markers(fileobj, space='mbf', unit=None, image=0)
 """
 Parse a MBF XML file and extract stereology markers into a JSON
 
@@ -135,7 +137,9 @@ space : {'mbf', 'voxel'}
     convert them to voxel space ([+i, +j, +k] with origin at
     center of top-left voxel)
 unit : {'voxel', 'mm', 'um'}
-    Convert point coordinates to this unit.
+    Convert point coordinates to this unit. By default:
+    * space='mbf'   -> unit='um'
+    * space='voxel' -> unit='voxel'
 image : int or str
     Image used to convert MBF coordinates to voxel coordinates
     (Index or name)
@@ -150,7 +154,7 @@ markers : {
 ```
 
 ```python
-mbfio.xml.parse_sites(fileobj, space='mbf', unit='um', image=0)
+mbfio.xml.parse_sites(fileobj, space='mbf', unit=None, image=0)
 """
 Parse a MBF XML file and extract site contours into a JSON
 
@@ -167,7 +171,9 @@ space : {'mbf', 'voxel'}
     convert them to voxel space ([+i, +j, +k] with origin at
     center of top-left voxel)
 unit : {'voxel', 'mm', 'um'}
-    Convert point coordinates to this unit.
+    Convert point coordinates to this unit. By default:
+    * space='mbf'   -> unit='um'
+    * space='voxel' -> unit='voxel'
 image : int or str
     Image used to convert MBF coordinates to voxel coordinates
     (Index or name)
@@ -191,7 +197,7 @@ sites : {
 
 ```python
 mbfio.xml.parse_contours(fileobj, exclude_keys=SITE_KEYS, include_keys=None,
-                         space='mbf', unit='um', image=0)
+                         space='mbf', unit=None, image=0)
 """
 Parse a MBF XML file and extract contours into a JSON
 
@@ -215,7 +221,9 @@ space : {'mbf', 'voxel'}
     convert them to voxel space ([+i, +j, +k] with origin at
     center of top-left voxel)
 unit : {'voxel', 'mm', 'um'}
-    Convert point coordinates to this unit.
+    Convert point coordinates to this unit. By default:
+    * space='mbf'   -> unit='um'
+    * space='voxel' -> unit='voxel'
 image : int or str
     Image used to convert MBF coordinates to voxel coordinates
     (Index or name)

@@ -13,7 +13,7 @@ from .utils import make_vox2mbf, convert_unit, convert_unit_
 SITE_KEYS = ('TopRight', 'LeftBottom')
 
 def parse_contours(fileobj, exclude_keys=SITE_KEYS, include_keys=None,
-                   space='mbf', unit='um', image=0):
+                   space='mbf', unit=None, image=0):
     """
     Parse a MBF XML file and extract contours into a JSON
 
@@ -37,7 +37,9 @@ def parse_contours(fileobj, exclude_keys=SITE_KEYS, include_keys=None,
         convert them to voxel space ([+i, +j, +k] with origin at
         center of top-left voxel)
     unit : {'voxel', 'mm', 'um'}
-        Convert point coordinates to this unit.
+        Convert point coordinates to this unit. By default:
+        * space='mbf'   -> unit='um'
+        * space='voxel' -> unit='voxel'
     image : int or str
         Image used to convert MBF coordinates to voxel coordinates
         (Index or name)
@@ -87,7 +89,7 @@ def parse_contours(fileobj, exclude_keys=SITE_KEYS, include_keys=None,
     return contours
 
 
-def parse_sites(fileobj, space='mbf', unit='um', image=0):
+def parse_sites(fileobj, space='mbf', unit=None, image=0):
     """
     Parse a MBF XML file and extract site contours into a JSON
 
@@ -104,7 +106,9 @@ def parse_sites(fileobj, space='mbf', unit='um', image=0):
         convert them to voxel space ([+i, +j, +k] with origin at
         center of top-left voxel)
     unit : {'voxel', 'mm', 'um'}
-        Convert point coordinates to this unit.
+        Convert point coordinates to this unit. By default:
+        * space='mbf'   -> unit='um'
+        * space='voxel' -> unit='voxel'
     image : int or str
         Image used to convert MBF coordinates to voxel coordinates
         (Index or name)
@@ -189,7 +193,7 @@ def parse_sites(fileobj, space='mbf', unit='um', image=0):
     return sites
 
 
-def parse_stereo_markers(fileobj, space='mbf', unit='um', image=0):
+def parse_stereo_markers(fileobj, space='mbf', unit=None, image=0):
     """
     Parse a MBF XML file and extract stereology markers into a JSON
 
@@ -206,7 +210,9 @@ def parse_stereo_markers(fileobj, space='mbf', unit='um', image=0):
         convert them to voxel space ([+i, +j, +k] with origin at
         center of top-left voxel)
     unit : {'voxel', 'mm', 'um'}
-        Convert point coordinates to this unit.
+        Convert point coordinates to this unit. By default:
+        * space='mbf'   -> unit='um'
+        * space='voxel' -> unit='voxel'
     image : int or str
         Image used to convert MBF coordinates to voxel coordinates
         (Index or name)
@@ -253,7 +259,7 @@ def parse_stereo_markers(fileobj, space='mbf', unit='um', image=0):
     return markers
 
 
-def parse_stereo(fileobj, space='mbf', unit='um', image=0):
+def parse_stereo(fileobj, space='mbf', unit=None, image=0):
     """
     Parse a MBF XML file and extract stereology into a JSON
 
@@ -270,7 +276,9 @@ def parse_stereo(fileobj, space='mbf', unit='um', image=0):
         convert them to voxel space ([+i, +j, +k] with origin at
         center of top-left voxel)
     unit : {'voxel', 'mm', 'um'}
-        Convert point coordinates to this unit.
+        Convert point coordinates to this unit. By default:
+        * space='mbf'   -> unit='um'
+        * space='voxel' -> unit='voxel'
     image : int or str
         Image used to convert MBF coordinates to voxel coordinates
         (Index or name)
@@ -346,7 +354,8 @@ def _get_point(point):
 
 
 def _get_vox2mbf(obj, space, unit, image=0, dtype='float64'):
-    space, unit = space.lower(), unit.lower()
+    space, unit = space.lower(), (unit or '').lower()
+    unit = unit or ('voxel' if space[0] == 'v' else 'um')
     vox2mbf = None
     if space[0] == 'v' or unit[0] == 'v':
         imgindex = image
@@ -374,7 +383,8 @@ def _get_vox2mbf(obj, space, unit, image=0, dtype='float64'):
 
 
 def _convert_coord(points, vox2mbf, space, unit):
-    space, unit = space.lower(), unit.lower()
+    space, unit = space.lower(), (unit or '').lower()
+    unit = unit or ('voxel' if space[0] == 'v' else 'um')
     mbf2vox = np.linalg.inv(vox2mbf)
     scale = np.abs(np.diag(vox2mbf)[:3])
     if space[0] == 'v':
