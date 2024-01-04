@@ -178,7 +178,7 @@ contours : list[{
 ### MicroBrightfield's ASC format
 
 ```python
-cmlio.asc.parse_contours(fileobj)
+mbfio.asc.parse_contours(fileobj)
 """
 Parse a MicroBrightField asc file that contains vertices of closed
 regions of interest.
