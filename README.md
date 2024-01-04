@@ -1,6 +1,32 @@
 # mbf-io
 Tools to parse microbrightfield model files
 
+## Installation
+
+```shell
+pip install git+https://github.com/balbasty/mbf-io
+```
+
+### Fast rasterization
+
+One important use-case of this package is to rasterize MBF contours
+(which are in-plane closed polygons) on a regular grid. This is achieved
+with the function `mbfio.polygons.rasterize`.
+Although we provide a pure python implementation of this function, it is
+quite slow. A faster implementation is available in the
+[`jitfields`](https://github.com/balbasty/jitfields) package, which gets
+installed when the `all` extra tag is used:
+```shell
+pip install git+https://github.com/balbasty/mbf-io[all]
+```
+
+However, `jitfields` depends on `torch` and `cppyy`, which are easier to
+install with conda. It is therefore advised to install these dependencies
+manually with conda:
+```shell
+conda install -c balbasty -c conda-forge -c pytorch jitfields cppyy==2 pytorch
+pip install git+https://github.com/balbasty/mbf-io[all]
+```
 
 ## API
 
@@ -246,5 +272,132 @@ Returns
 coord : dict (or list of dict)
     A dictionary that can be dumped as json
 
+"""
+```
+
+### Utilities
+
+```python
+mbfio.polygons.rasterize(shape, vertices, faces=None)
+"""
+Rasterize the interior of a polygon or surface.
+
+The polygon or surface *must* be closed.
+
+Parameters
+----------
+shape : list[int]
+    Shape of the raster grid.
+vertices : (nv, dim) array
+    Vertex coordinates (in raster space)
+faces : (nf, dim) array[int]
+    Faces are encoded by the indices of its vertices.
+    By default, assume that vertices are ordered and define a closed curve
+
+Returns
+-------
+mask : (*shape) array[bool]
+    Rasterized polygon
+
+"""
+```
+
+```python
+mbfio.polygons.is_inside(points, vertices, faces=None)
+"""
+Test if a (batch of) point is inside a polygon or surface.
+
+The polygon or surface *must* be closed.
+
+Parameters
+----------
+points : (..., dim) array
+    Coordinates of points to test
+vertices : (nv, dim) array
+    Vertex coordinates
+faces : (nf, dim) array[int]
+    Faces are encoded by the indices of its vertices.
+    By default, assume that vertices are ordered and define a closed curve
+
+Returns
+-------
+check : (...) array[bool]
+
+"""
+```
+
+```python
+mbfio.utils.make_vox2mbf(scale=1, origin=0)
+"""
+Build the voxel-to-MBF affine matrix
+
+In MBF space:
+* +x maps towards the right of the image
+* +y maps towards the bottom of the image
+* +z maps towards the top of the stack
+* x, y, and z are expressed in micrometers
+* The coordinate of the corner of the top-left voxel is stored in
+    the `<coord>` field of the `<image>` tag.
+
+            +Y
+            ▲
+            ┃       X0
+-X ━━━━━━━━━╋━━━━━━━┿━━━━━━━━━━━━━━━━━━━━━━▶ +X
+            ┃       ┆
+         Y0 ╂┄┄┄┄┄┄ ┌─────────────┐
+            ┃       │             │
+            ┃       │    image    │
+            ┃       │             │
+            ┃       └─────────────┘
+            ┃
+            -Y
+
+The left/right, bottom/left orientation of the data array follows
+(most likely) the TIFF convention. In TIFF:
+* Plane data is stored in row-major (C) order, so the most rapidly
+    changing dimension is `i` (or `x` or `left-right`) and the least
+    rapidly changing dimension is `j` (or `y` or `top-bottom`).
+* The first element corresponds to the top-left of the image.
+
+      Top
+Left ─┼────┬────┬────┬────┬────┬─▶  Right (+i)
+      │ 01 │ 02 │ 03 │ 04 │ 05 │
+      ├────┼────┼────┼────┼────┤
+      │ 06 │ 07 │ 08 │ 09 │ 10 │
+      ├────┼────┼────┼────┼────┤
+      │ 11 │ 12 │ 13 │ 14 │ 15 │
+      ├────┴────┴────┴────┴────┘
+      ▼
+      Bottom (+j)
+
+Parameters
+----------
+scale : [list of] float
+    Voxel size along (x, y, z) [== (i, j, k)]
+origin : [list of] float
+    Origin (x0, y0, z0) of the corner of the top-left voxel in MBF space
+
+Returns
+-------
+affine : (4, 4) array
+    Matrix that maps from voxels (i, j, k) to MBF space (x, y, z)
+
+"""
+```
+
+```python
+mbfio.utils.convert_unit(val, src, dst)
+"""
+Convert between spatial units
+
+Parameters
+----------
+val : scalar or array
+src : {'pm', 'nm', 'um', 'mm', 'cm', 'dm', 'm', 'Dm', 'Hm', 'Km'}
+dst : {'pm', 'nm', 'um', 'mm', 'cm', 'dm', 'm', 'Dm', 'Hm', 'Km'}
+
+Returns
+-------
+val : scalar or array
 """
 ```
