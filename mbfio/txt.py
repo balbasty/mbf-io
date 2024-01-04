@@ -2,8 +2,9 @@ from numbers import Number
 import re
 
 
-def read_markers(fname, vx=1e-3, split_groups=False):
-    """Read marker coordinates file into freesurfer-compatible json format
+def parse_markers(fname, split_groups=False):
+    """
+    Parse marker coordinates file into freesurfer-compatible json format
 
     The input file looks like this:
     ```
